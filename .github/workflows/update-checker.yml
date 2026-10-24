@@ -9,6 +9,10 @@ on:
   schedule:
     - cron: "0 */18 * * *"  # 每18小时检查一次
 
+permissions:
+  contents: write
+  actions: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
