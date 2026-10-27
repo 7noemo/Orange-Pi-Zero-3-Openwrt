@@ -96,6 +96,21 @@ jobs:
         make download -j$(nproc) || make download -j8 V=s
         find dl -size -1024c -delete
 
+    - name: Debug iStore package metadata
+      run: |
+        cd openwrt
+        echo "--- feed symlinks ---"
+        ls -la package/feeds/kenzo/ 2>/dev/null | grep -iE "store|quickstart|taskd" || echo "no symlink"
+        echo "--- package dir ---"
+        ls package/feeds/kenzo/luci-app-store 2>&1 | head -5
+        echo "--- regenerate metadata ---"
+        make -s prepare-tmpinfo 2>&1 | tail -15 || true
+        echo "--- metadata symbols ---"
+        grep -n "PACKAGE_luci-app-store" tmp/.config-package.in | head -5 || echo "STORE NOT IN METADATA"
+        grep -n "PACKAGE_luci-app-quickstart" tmp/.config-package.in | head -5 || echo "QUICKSTART NOT IN METADATA"
+        echo "--- .config entries ---"
+        grep -n "luci-app-store\|luci-app-quickstart" .config || echo "NOT IN .config"
+
     - name: Verify key packages in .config
       run: |
         cd openwrt
