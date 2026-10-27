@@ -96,6 +96,25 @@ jobs:
         make download -j$(nproc) || make download -j8 V=s
         find dl -size -1024c -delete
 
+    - name: Verify key packages in .config
+      run: |
+        cd openwrt
+        fail=0
+        for p in luci-app-store luci-app-quickstart luci-i18n-base-zh-cn; do
+          if grep -q "^CONFIG_PACKAGE_$p=y" .config; then
+            echo "OK: $p enabled"
+          elif grep -q "^# CONFIG_PACKAGE_$p is not set" .config; then
+            echo "FAIL: $p exists but was dropped by defconfig (unmet dependency):"
+            grep -A30 "^config PACKAGE_$p\$" tmp/.config-package.in | head -35
+            fail=1
+          else
+            echo "FAIL: $p not found in package metadata (feed not installed?)"
+            fail=1
+          fi
+        done
+        grep -q "^CONFIG_LUCI_LANG_zh_Hans=y" .config && echo "OK: LuCI zh_Hans language enabled"
+        [ "$fail" -eq 0 ] || exit 1
+
     - name: Compile the firmware
       id: compile
       run: |
