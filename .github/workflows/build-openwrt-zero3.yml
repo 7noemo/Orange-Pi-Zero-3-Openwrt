@@ -99,15 +99,32 @@ jobs:
     - name: Debug iStore package metadata
       run: |
         cd openwrt
-        for p in luci-app-store luci-app-quickstart quickstart luci-lib-taskd; do
+        for p in luci-app-store luci-app-quickstart quickstart luci-lib-taskd taskd; do
           echo "===== $p ====="
-          awk -v pkg="$p" 'BEGIN{RS="";ORS="\n"} $0 ~ ("(^|\n)config PACKAGE_" pkg "$")' tmp/.config-package.in
-          echo "----- undefined dependency symbols -----"
-          awk -v pkg="$p" 'BEGIN{RS="";ORS="\n"} $0 ~ ("(^|\n)config PACKAGE_" pkg "$")' tmp/.config-package.in \
-            | grep -oE "(depends on|select) [A-Za-z0-9_]+" | awk '{print $3}' | sort -u \
-            | while read -r s; do grep -qE "^config $s\$" tmp/.config-package.in || echo "UNDEFINED: $s"; done
+          line=$(grep -nE "^[[:space:]]*config PACKAGE_$p[[:space:]]*$" tmp/.config-package.in | head -1 | cut -d: -f1)
+          if [ -n "$line" ]; then
+            block=$(sed -n "${line},$((line+80))p" tmp/.config-package.in | awk 'NF==0{exit}{print}')
+            echo "$block"
+            echo "----- undefined dependency symbols -----"
+            echo "$block" | grep -oE "(depends on|select)[[:space:]]+[A-Za-z0-9_]+" \
+              | awk '{print $3}' | sort -u \
+              | while read -r s; do
+                  grep -qE "^[[:space:]]*config $s[[:space:]]*$" tmp/.config-package.in || echo "UNDEFINED: $s"
+                done
+          else
+            echo "BLOCK NOT FOUND"
+          fi
           echo
         done
+
+    - name: Upload config debug artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: config-debug
+        path: |
+          openwrt/tmp/.config-package.in
+          openwrt/.config
 
     - name: Verify key packages in .config
       run: |
