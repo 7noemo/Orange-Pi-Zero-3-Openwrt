@@ -99,17 +99,15 @@ jobs:
     - name: Debug iStore package metadata
       run: |
         cd openwrt
-        echo "--- feed symlinks ---"
-        ls -la package/feeds/kenzo/ 2>/dev/null | grep -iE "store|quickstart|taskd" || echo "no symlink"
-        echo "--- package dir ---"
-        ls package/feeds/kenzo/luci-app-store 2>&1 | head -5
-        echo "--- regenerate metadata ---"
-        make -s prepare-tmpinfo 2>&1 | tail -15 || true
-        echo "--- metadata symbols ---"
-        grep -n "PACKAGE_luci-app-store" tmp/.config-package.in | head -5 || echo "STORE NOT IN METADATA"
-        grep -n "PACKAGE_luci-app-quickstart" tmp/.config-package.in | head -5 || echo "QUICKSTART NOT IN METADATA"
-        echo "--- .config entries ---"
-        grep -n "luci-app-store\|luci-app-quickstart" .config || echo "NOT IN .config"
+        for p in luci-app-store luci-app-quickstart quickstart luci-lib-taskd; do
+          echo "===== $p ====="
+          awk -v pkg="$p" 'BEGIN{RS="";ORS="\n"} $0 ~ ("(^|\n)config PACKAGE_" pkg "$")' tmp/.config-package.in
+          echo "----- undefined dependency symbols -----"
+          awk -v pkg="$p" 'BEGIN{RS="";ORS="\n"} $0 ~ ("(^|\n)config PACKAGE_" pkg "$")' tmp/.config-package.in \
+            | grep -oE "(depends on|select) [A-Za-z0-9_]+" | awk '{print $3}' | sort -u \
+            | while read -r s; do grep -qE "^config $s\$" tmp/.config-package.in || echo "UNDEFINED: $s"; done
+          echo
+        done
 
     - name: Verify key packages in .config
       run: |
