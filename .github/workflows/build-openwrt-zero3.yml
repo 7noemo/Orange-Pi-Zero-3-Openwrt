@@ -96,35 +96,15 @@ jobs:
         make download -j$(nproc) || make download -j8 V=s
         find dl -size -1024c -delete
 
-    - name: Debug iStore package metadata
+    - name: Verify iStore deps (TAR_XZ / xz-utils guard)
       run: |
         cd openwrt
-        for p in luci-app-store luci-app-quickstart quickstart luci-lib-taskd taskd; do
-          echo "===== $p ====="
-          line=$(grep -nE "^[[:space:]]*config PACKAGE_$p[[:space:]]*$" tmp/.config-package.in | head -1 | cut -d: -f1)
-          if [ -n "$line" ]; then
-            block=$(sed -n "${line},$((line+80))p" tmp/.config-package.in | awk 'NF==0{exit}{print}')
-            echo "$block"
-            echo "----- undefined dependency symbols -----"
-            echo "$block" | grep -oE "(depends on|select)[[:space:]]+[A-Za-z0-9_]+" \
-              | awk '{print $3}' | sort -u \
-              | while read -r s; do
-                  grep -qE "^[[:space:]]*config $s[[:space:]]*$" tmp/.config-package.in || echo "UNDEFINED: $s"
-                done
-          else
-            echo "BLOCK NOT FOUND"
-          fi
-          echo
-        done
-
-    - name: Upload config debug artifacts
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: config-debug
-        path: |
-          openwrt/tmp/.config-package.in
-          openwrt/.config
+        echo "--- TAR_XZ / tar / xz-utils definitions ---"
+        grep -nE "^[[:space:]]*config PACKAGE_(TAR_XZ|tar|xz-utils)[[:space:]]*$" tmp/.config-package.in | head -5 || echo "no definitions"
+        echo "--- .config state ---"
+        grep -E "^CONFIG_PACKAGE_(luci-app-store|luci-app-quickstart|quickstart|xz-utils)=" .config || echo "MISSING FROM .config"
+        echo "--- is not set? ---"
+        grep -E "^# CONFIG_PACKAGE_(luci-app-store|luci-app-quickstart) is not set" .config || echo "(not listed as unset)"
 
     - name: Verify key packages in .config
       run: |
