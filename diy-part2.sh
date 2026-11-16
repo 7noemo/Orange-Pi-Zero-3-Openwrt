@@ -23,7 +23,7 @@ if [ -f "$IOMMU_C" ]; then
     elif grep -q 'sun55i_iommu_attach_dev(struct iommu_domain \*domain,$' "$IOMMU_C"; then
         perl -0pi -e 's/static int sun55i_iommu_attach_dev\(struct iommu_domain \*domain,\s*\n\s*struct device \*dev\)/static int sun55i_iommu_attach_dev(struct iommu_domain *domain,\n\t\t\t   struct device *dev,\n\t\t\t   struct iommu_domain *old)/' "$IOMMU_C"
         if grep -q 'sun55i_iommu_attach_dev(struct iommu_domain \*domain,$' "$IOMMU_C" && \
-           grep -A1 'sun55i_iommu_attach_dev(struct iommu_domain \*domain,$' "$IOMMU_C" | grep -q 'struct iommu_domain \*old'; then
+           grep -A2 'sun55i_iommu_attach_dev(struct iommu_domain \*domain,$' "$IOMMU_C" | grep -q 'struct iommu_domain \*old'; then
             echo "[fix-iommu] patched attach_dev with new 'old' domain parameter (kernel 6.18.60+)"
         else
             echo "::error::sun55i-iommu attach_dev patch failed - pattern no longer matches, please update diy-part2.sh"
