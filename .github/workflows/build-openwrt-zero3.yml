@@ -172,6 +172,8 @@ jobs:
         touch release.txt
         echo "- Orange Pi Zero 3 (H618) / ImmortalWrt" >> release.txt
         echo "- 内置 AW859A (UWE5622) Wi-Fi 驱动 + 固件" >> release.txt
+        echo "- 1GB/1.5GB/2GB/4GB 通用镜像；U-Boot 2026.04 自动探测内存容量" >> release.txt
+        echo "- 若无法启动：接串口 115200 看 DRAM 那一行，排查表见 README" >> release.txt
         echo "status=success" >> "$GITHUB_OUTPUT"
 
     - name: Upload firmware to release
