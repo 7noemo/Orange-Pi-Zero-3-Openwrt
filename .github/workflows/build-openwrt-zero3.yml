@@ -110,7 +110,7 @@ jobs:
       run: |
         cd openwrt
         fail=0
-        for p in luci-app-store luci-app-quickstart luci-i18n-base-zh-cn; do
+        for p in luci-app-store luci-app-quickstart luci-i18n-base-zh-cn kmod-fs-xfs xfs-mkfs xfs-fsck xfs-growfs xfs-admin; do
           if grep -q "^CONFIG_PACKAGE_$p=y" .config; then
             echo "OK: $p enabled"
           elif grep -q "^# CONFIG_PACKAGE_$p is not set" .config; then
